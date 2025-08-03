@@ -170,6 +170,7 @@ function ImageGenerator({ onGenerate, prompts }) {
   const [imageFile, setImageFile] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState("modern");
+  const [imagePreview, setImagePreview] = useState(null);
   const styles = [
     "modern",
     "minimalist",
@@ -182,12 +183,21 @@ function ImageGenerator({ onGenerate, prompts }) {
     "geometric",
     "organic"
   ];
+  const handleImageFileChange = (e) => {
+    const file = e.target.files[0];
+    setImageFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e2) => setImagePreview(e2.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
   const handleGenerateFromText = async () => {
     if (!textPrompt.trim()) return;
     setGenerating(true);
     try {
       const result = await websim.imageGen({
-        prompt: `${textPrompt}, ${selectedStyle} logo design, professional, high quality`,
+        prompt: `${textPrompt}, ${selectedStyle} logo design, professional, high quality, vector style`,
         width: 512,
         height: 512
       });
@@ -205,6 +215,7 @@ function ImageGenerator({ onGenerate, prompts }) {
       setTextPrompt("");
     } catch (error) {
       console.error("Error generating from text:", error);
+      alert("Failed to generate logo. Please try a different prompt or refresh the page.");
     } finally {
       setGenerating(false);
     }
@@ -213,53 +224,25 @@ function ImageGenerator({ onGenerate, prompts }) {
     if (!imageFile || !textPrompt.trim()) return;
     setGenerating(true);
     try {
-      const fileUrl = await websim.upload(imageFile);
-      let retryCount = 0;
-      const maxRetries = 3;
-      while (retryCount < maxRetries) {
-        try {
-          const completion = await websim.chat.completions.create({
-            messages: [
-              {
-                role: "system",
-                content: "You are a logo designer. Create a detailed prompt for generating a logo based on the user's reference image and text."
-              },
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: `Create a logo prompt based on this image and text: ${textPrompt}` },
-                  { type: "image_url", image_url: { url: fileUrl } }
-                ]
-              }
-            ]
-          });
-          const finalPrompt = completion.content;
-          const result = await websim.imageGen({
-            prompt: `${finalPrompt}, professional logo design`,
-            width: 512,
-            height: 512
-          });
-          const newImage = await room.collection("logo_images").create({
-            url: result.url,
-            prompt: finalPrompt,
-            type: "image+text",
-            originalPrompt: textPrompt
-          });
-          onGenerate(newImage);
-          setImageFile(null);
-          setTextPrompt("");
-          return;
-        } catch (error) {
-          retryCount++;
-          if (retryCount >= maxRetries) {
-            throw new Error("Failed to generate after multiple attempts");
-          }
-          await new Promise((resolve) => setTimeout(resolve, 1e3 * retryCount));
-        }
-      }
+      const enhancedPrompt = `Create a professional logo inspired by ${textPrompt}, incorporating visual elements from the reference image. Clean, modern design suitable for branding.`;
+      const result = await websim.imageGen({
+        prompt: enhancedPrompt,
+        width: 512,
+        height: 512
+      });
+      const newImage = await room.collection("logo_images").create({
+        url: result.url,
+        prompt: enhancedPrompt,
+        type: "image+text",
+        originalPrompt: textPrompt
+      });
+      onGenerate(newImage);
+      setImageFile(null);
+      setImagePreview(null);
+      setTextPrompt("");
     } catch (error) {
       console.error("Error generating from image:", error);
-      alert("Failed to generate logo. Please try again.");
+      alert("Failed to generate logo. Please try again with a different approach.");
     } finally {
       setGenerating(false);
     }
@@ -268,23 +251,23 @@ function ImageGenerator({ onGenerate, prompts }) {
     /* @__PURE__ */ jsxDEV("div", { children: [
       /* @__PURE__ */ jsxDEV("h3", { className: "text-lg font-semibold mb-3", children: "Generate from Text" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 251,
+        lineNumber: 234,
         columnNumber: 21
       }, this),
       /* @__PURE__ */ jsxDEV(
-        "input",
+        "textarea",
         {
-          type: "text",
           value: textPrompt,
           onChange: (e) => setTextPrompt(e.target.value),
-          placeholder: "Enter logo description...",
-          className: "w-full px-4 py-2 bg-gray-700 rounded-lg mb-3"
+          placeholder: "Describe your logo idea...",
+          className: "w-full px-4 py-2 bg-gray-700 rounded-lg mb-3 resize-none",
+          rows: 3
         },
         void 0,
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 252,
+          lineNumber: 235,
           columnNumber: 21
         },
         this
@@ -297,7 +280,7 @@ function ImageGenerator({ onGenerate, prompts }) {
           className: "w-full px-4 py-2 bg-gray-700 rounded-lg mb-3",
           children: styles.map((style) => /* @__PURE__ */ jsxDEV("option", { value: style, children: style.charAt(0).toUpperCase() + style.slice(1) }, style, false, {
             fileName: "<stdin>",
-            lineNumber: 265,
+            lineNumber: 248,
             columnNumber: 29
           }, this))
         },
@@ -305,7 +288,7 @@ function ImageGenerator({ onGenerate, prompts }) {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 259,
+          lineNumber: 242,
           columnNumber: 21
         },
         this
@@ -315,27 +298,27 @@ function ImageGenerator({ onGenerate, prompts }) {
         {
           onClick: handleGenerateFromText,
           disabled: !textPrompt.trim() || generating,
-          className: "w-full px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50",
+          className: "w-full px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed",
           children: generating ? "Generating..." : "Generate from Text"
         },
         void 0,
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 270,
+          lineNumber: 253,
           columnNumber: 21
         },
         this
       )
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 250,
+      lineNumber: 233,
       columnNumber: 17
     }, this),
     /* @__PURE__ */ jsxDEV("div", { children: [
       /* @__PURE__ */ jsxDEV("h3", { className: "text-lg font-semibold mb-3", children: "Generate from Image + Text" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 280,
+        lineNumber: 263,
         columnNumber: 21
       }, this),
       /* @__PURE__ */ jsxDEV(
@@ -343,32 +326,37 @@ function ImageGenerator({ onGenerate, prompts }) {
         {
           type: "file",
           accept: "image/*",
-          onChange: (e) => setImageFile(e.target.files[0]),
-          className: "w-full px-4 py-2 bg-gray-700 rounded-lg mb-3"
+          onChange: handleImageFileChange,
+          className: "w-full px-4 py-2 bg-gray-700 rounded-lg mb-3 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
         },
         void 0,
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 281,
+          lineNumber: 264,
           columnNumber: 21
         },
         this
       ),
+      imagePreview && /* @__PURE__ */ jsxDEV("img", { src: imagePreview, alt: "Preview", className: "w-full h-24 object-cover rounded-lg mb-3" }, void 0, false, {
+        fileName: "<stdin>",
+        lineNumber: 271,
+        columnNumber: 25
+      }, this),
       /* @__PURE__ */ jsxDEV(
-        "input",
+        "textarea",
         {
-          type: "text",
           value: textPrompt,
           onChange: (e) => setTextPrompt(e.target.value),
-          placeholder: "Describe what you want...",
-          className: "w-full px-4 py-2 bg-gray-700 rounded-lg mb-3"
+          placeholder: "Describe what you want from the image...",
+          className: "w-full px-4 py-2 bg-gray-700 rounded-lg mb-3 resize-none",
+          rows: 3
         },
         void 0,
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 287,
+          lineNumber: 273,
           columnNumber: 21
         },
         this
@@ -378,30 +366,30 @@ function ImageGenerator({ onGenerate, prompts }) {
         {
           onClick: handleGenerateFromImage,
           disabled: !imageFile || !textPrompt.trim() || generating,
-          className: "w-full px-4 py-2 bg-pink-600 rounded-lg hover:bg-pink-700 disabled:opacity-50",
+          className: "w-full px-4 py-2 bg-pink-600 rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed",
           children: generating ? "Generating..." : "Generate from Image"
         },
         void 0,
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 294,
+          lineNumber: 280,
           columnNumber: 21
         },
         this
       )
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 279,
+      lineNumber: 262,
       columnNumber: 17
     }, this)
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 249,
+    lineNumber: 232,
     columnNumber: 13
   }, this) }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 248,
+    lineNumber: 231,
     columnNumber: 9
   }, this);
 }
@@ -409,11 +397,11 @@ function Gallery({ images, loading, lastImageRef, hasMore }) {
   if (loading && (!images || images.length === 0)) {
     return /* @__PURE__ */ jsxDEV("div", { className: "flex justify-center items-center h-64", children: /* @__PURE__ */ jsxDEV("div", { className: "text-2xl", children: "Loading..." }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 311,
+      lineNumber: 297,
       columnNumber: 17
     }, this) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 310,
+      lineNumber: 296,
       columnNumber: 13
     }, this);
   }
@@ -429,36 +417,36 @@ function Gallery({ images, loading, lastImageRef, hasMore }) {
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 321,
+        lineNumber: 307,
         columnNumber: 21
       },
       this
     )) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 319,
+      lineNumber: 305,
       columnNumber: 13
     }, this),
     loading && /* @__PURE__ */ jsxDEV("div", { className: "text-center py-8", children: /* @__PURE__ */ jsxDEV("div", { className: "text-xl", children: "Loading more..." }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 331,
+      lineNumber: 317,
       columnNumber: 21
     }, this) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 330,
+      lineNumber: 316,
       columnNumber: 17
     }, this),
     !hasMore && images.length > 0 && /* @__PURE__ */ jsxDEV("div", { className: "text-center py-8 text-gray-400", children: /* @__PURE__ */ jsxDEV("div", { className: "text-xl", children: "End of gallery" }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 336,
+      lineNumber: 322,
       columnNumber: 21
     }, this) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 335,
+      lineNumber: 321,
       columnNumber: 17
     }, this)
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 318,
+    lineNumber: 304,
     columnNumber: 9
   }, this);
 }
@@ -482,7 +470,7 @@ function ImageCard({ image, isLast, lastImageRef }) {
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 356,
+        lineNumber: 342,
         columnNumber: 13
       },
       this
@@ -490,13 +478,13 @@ function ImageCard({ image, isLast, lastImageRef }) {
     /* @__PURE__ */ jsxDEV("div", { className: "p-4", children: [
       /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-gray-300 truncate mb-2", children: image.prompt || "Logo" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 362,
+        lineNumber: 348,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("div", { className: "flex justify-between items-center", children: [
         /* @__PURE__ */ jsxDEV("span", { className: "text-xs text-gray-500", children: image.type }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 366,
+          lineNumber: 352,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDEV(
@@ -510,29 +498,29 @@ function ImageCard({ image, isLast, lastImageRef }) {
           false,
           {
             fileName: "<stdin>",
-            lineNumber: 369,
+            lineNumber: 355,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 365,
+        lineNumber: 351,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-gray-400 mt-2", children: new Date(image.created_at).toLocaleDateString() }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 376,
+        lineNumber: 362,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 361,
+      lineNumber: 347,
       columnNumber: 13
     }, this)
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 355,
+    lineNumber: 341,
     columnNumber: 9
   }, this);
 }
@@ -552,7 +540,7 @@ class ErrorBoundary extends React.Component {
       return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen bg-gray-900 text-white flex items-center justify-center", children: /* @__PURE__ */ jsxDEV("div", { className: "text-center", children: [
         /* @__PURE__ */ jsxDEV("h2", { className: "text-2xl mb-4", children: "Something went wrong" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 404,
+          lineNumber: 390,
           columnNumber: 25
         }, this),
         /* @__PURE__ */ jsxDEV(
@@ -566,18 +554,18 @@ class ErrorBoundary extends React.Component {
           false,
           {
             fileName: "<stdin>",
-            lineNumber: 405,
+            lineNumber: 391,
             columnNumber: 25
           },
           this
         )
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 403,
+        lineNumber: 389,
         columnNumber: 21
       }, this) }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 402,
+        lineNumber: 388,
         columnNumber: 17
       }, this);
     }
@@ -588,11 +576,11 @@ const root = createRoot(document.getElementById("root"));
 root.render(
   /* @__PURE__ */ jsxDEV(ErrorBoundary, { children: /* @__PURE__ */ jsxDEV(App, {}, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 423,
+    lineNumber: 409,
     columnNumber: 9
   }) }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 422,
+    lineNumber: 408,
     columnNumber: 5
   })
 );
