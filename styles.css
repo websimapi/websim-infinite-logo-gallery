@@ -62,3 +62,24 @@ body {
     }
 }
 
+/* Fix for image preview sizing */
+img.object-cover {
+    object-fit: cover;
+}
+
+/* Ensure consistent card heights */
+.card-image {
+    height: 192px;
+    width: 100%;
+    object-fit: cover;
+}
+
+/* Loading spinner */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
