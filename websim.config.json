@@ -16,11 +16,15 @@
         },
         "type": {
           "type": "text",
-          "description": "Type of generation: text, image, image+text"
+          "description": "Type of generation: text, image, image+text, generated"
         },
         "style": {
           "type": "text",
           "description": "Style of the logo if generated from text"
+        },
+        "source_logos": {
+          "type": "jsonb",
+          "description": "Array of logo IDs that inspired this generation"
         }
       },
       "prompts": {
@@ -38,7 +42,7 @@
         }
       }
     },
-    "instructions": "This infinite logo gallery stores generated logos and their prompts. The gallery supports both text-to-logo and image-to-logo generation. When infinite scrolling reaches the end, it generates new logos by merging existing prompts in creative ways."
+    "instructions": "This infinite logo gallery stores generated logos and their prompts. The gallery supports both text-to-logo and image-to-logo generation. When infinite scrolling reaches the end, it generates new logos by merging existing prompts in creative ways, creating an endless stream of unique logo variations."
   }
 }
 

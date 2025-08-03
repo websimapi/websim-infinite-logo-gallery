@@ -28,21 +28,62 @@ function App() {
     if (loading || !hasMore) return;
     setLoading(true);
     try {
-      if (prompts && prompts.length > 0) {
-        const randomPrompts = getRandomPrompts(prompts, 2);
-        const mergedPrompt = mergePrompts(randomPrompts);
-        const newImage = await generateLogo(mergedPrompt);
-        if (newImage) {
-          await room.collection("logo_images").create({
-            url: newImage,
-            prompt: mergedPrompt,
-            type: "generated"
-          });
+      if (images && images.length > 0) {
+        console.log("=== Infinite Gallery: Merging Existing Logos ===");
+        const existingLogos = [...images].sort(() => 0.5 - Math.random());
+        const selectedLogos = existingLogos.slice(0, Math.min(3, existingLogos.length));
+        console.log("Selected logos for merging:", selectedLogos.map((l) => ({
+          id: l.id.substring(0, 8),
+          prompt: l.prompt?.substring(0, 50) + "..."
+        })));
+        let mergedPrompt;
+        if (selectedLogos.length === 0) {
+          mergedPrompt = "modern minimalist logo design, professional, vector style";
+        } else if (selectedLogos.length === 1) {
+          const originalPrompt = selectedLogos[0].prompt || "modern logo";
+          mergedPrompt = `${originalPrompt}, creative variation, different style, unique approach`;
+        } else {
+          const prompts2 = selectedLogos.map((l) => l.prompt || "logo").filter((p) => p && p.trim());
+          const uniquePrompts = [...new Set(prompts2)];
+          if (uniquePrompts.length > 1) {
+            mergedPrompt = `Creative logo inspired by combining: ${uniquePrompts.join(", ")}. Fresh, unique design`;
+          } else {
+            mergedPrompt = `${uniquePrompts[0] || "modern logo"}, creative reinterpretation, fresh perspective`;
+          }
         }
+        console.log("Merged prompt for new logo:", mergedPrompt);
+        const result = await websim.imageGen({
+          prompt: `${mergedPrompt}, professional logo design, vector style, clean modern, high quality, unique`,
+          width: 512,
+          height: 512
+        });
+        console.log("Generated new logo URL:", result.url.substring(0, 100) + "...");
+        const newImage = await room.collection("logo_images").create({
+          url: result.url,
+          prompt: mergedPrompt,
+          type: "generated",
+          source_logos: selectedLogos.map((l) => l.id)
+          // Track which logos inspired this
+        });
+        console.log("=== New logo saved successfully ===");
+        await new Promise((resolve) => setTimeout(resolve, 1e3));
+        setHasMore(true);
+      } else {
+        console.log("No existing logos, creating fresh one...");
+        const result = await websim.imageGen({
+          prompt: "modern minimalist logo, professional design, vector style, clean",
+          width: 512,
+          height: 512
+        });
+        await room.collection("logo_images").create({
+          url: result.url,
+          prompt: "modern minimalist logo",
+          type: "generated"
+        });
       }
-      setHasMore(prompts && prompts.length > 0);
     } catch (error) {
-      console.error("Error loading more images:", error);
+      console.error("Error generating infinite logo:", error);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
@@ -76,7 +117,7 @@ function App() {
   return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen bg-gray-900 text-white", children: [
     /* @__PURE__ */ jsxDEV(Header, { onGenerate: () => setShowGenerator(!showGenerator) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 99,
+      lineNumber: 156,
       columnNumber: 13
     }, this),
     showGenerator && /* @__PURE__ */ jsxDEV(
@@ -89,7 +130,7 @@ function App() {
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 101,
+        lineNumber: 158,
         columnNumber: 17
       },
       this
@@ -106,14 +147,14 @@ function App() {
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 106,
+        lineNumber: 163,
         columnNumber: 13
       },
       this
     )
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 98,
+    lineNumber: 155,
     columnNumber: 9
   }, this);
 }
@@ -122,17 +163,17 @@ function Header({ onGenerate }) {
     /* @__PURE__ */ jsxDEV("div", { children: [
       /* @__PURE__ */ jsxDEV("h1", { className: "text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent", children: "Infinite Logo Gallery" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 122,
+        lineNumber: 179,
         columnNumber: 25
       }, this),
       /* @__PURE__ */ jsxDEV("p", { className: "text-gray-400 mt-1", children: "AI-powered logo generation with infinite scroll" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 125,
+        lineNumber: 182,
         columnNumber: 25
       }, this)
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 121,
+      lineNumber: 178,
       columnNumber: 21
     }, this),
     /* @__PURE__ */ jsxDEV(
@@ -146,22 +187,22 @@ function Header({ onGenerate }) {
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 127,
+        lineNumber: 184,
         columnNumber: 21
       },
       this
     )
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 120,
+    lineNumber: 177,
     columnNumber: 17
   }, this) }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 119,
+    lineNumber: 176,
     columnNumber: 13
   }, this) }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 118,
+    lineNumber: 175,
     columnNumber: 9
   }, this);
 }
@@ -318,7 +359,7 @@ function ImageGenerator({ onGenerate, prompts }) {
     /* @__PURE__ */ jsxDEV("div", { children: [
       /* @__PURE__ */ jsxDEV("h3", { className: "text-lg font-semibold mb-3", children: "Generate from Text" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 312,
+        lineNumber: 369,
         columnNumber: 21
       }, this),
       /* @__PURE__ */ jsxDEV(
@@ -334,7 +375,7 @@ function ImageGenerator({ onGenerate, prompts }) {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 313,
+          lineNumber: 370,
           columnNumber: 21
         },
         this
@@ -347,7 +388,7 @@ function ImageGenerator({ onGenerate, prompts }) {
           className: "w-full px-4 py-2 bg-gray-700 rounded-lg mb-3",
           children: styles.map((style) => /* @__PURE__ */ jsxDEV("option", { value: style, children: style.charAt(0).toUpperCase() + style.slice(1) }, style, false, {
             fileName: "<stdin>",
-            lineNumber: 326,
+            lineNumber: 383,
             columnNumber: 29
           }, this))
         },
@@ -355,7 +396,7 @@ function ImageGenerator({ onGenerate, prompts }) {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 320,
+          lineNumber: 377,
           columnNumber: 21
         },
         this
@@ -372,20 +413,20 @@ function ImageGenerator({ onGenerate, prompts }) {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 331,
+          lineNumber: 388,
           columnNumber: 21
         },
         this
       )
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 311,
+      lineNumber: 368,
       columnNumber: 17
     }, this),
     /* @__PURE__ */ jsxDEV("div", { children: [
       /* @__PURE__ */ jsxDEV("h3", { className: "text-lg font-semibold mb-3", children: "Generate from Image + Text" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 341,
+        lineNumber: 398,
         columnNumber: 21
       }, this),
       /* @__PURE__ */ jsxDEV(
@@ -400,14 +441,14 @@ function ImageGenerator({ onGenerate, prompts }) {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 342,
+          lineNumber: 399,
           columnNumber: 21
         },
         this
       ),
       imagePreview && /* @__PURE__ */ jsxDEV("img", { src: imagePreview, alt: "Preview", className: "w-full h-24 object-cover rounded-lg mb-3" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 349,
+        lineNumber: 406,
         columnNumber: 25
       }, this),
       /* @__PURE__ */ jsxDEV(
@@ -423,7 +464,7 @@ function ImageGenerator({ onGenerate, prompts }) {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 351,
+          lineNumber: 408,
           columnNumber: 21
         },
         this
@@ -440,23 +481,23 @@ function ImageGenerator({ onGenerate, prompts }) {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 358,
+          lineNumber: 415,
           columnNumber: 21
         },
         this
       )
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 340,
+      lineNumber: 397,
       columnNumber: 17
     }, this)
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 310,
+    lineNumber: 367,
     columnNumber: 13
   }, this) }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 309,
+    lineNumber: 366,
     columnNumber: 9
   }, this);
 }
@@ -464,11 +505,11 @@ function Gallery({ images, loading, lastImageRef, hasMore }) {
   if (loading && (!images || images.length === 0)) {
     return /* @__PURE__ */ jsxDEV("div", { className: "flex justify-center items-center h-64", children: /* @__PURE__ */ jsxDEV("div", { className: "text-2xl", children: "Loading..." }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 375,
+      lineNumber: 432,
       columnNumber: 17
     }, this) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 374,
+      lineNumber: 431,
       columnNumber: 13
     }, this);
   }
@@ -484,36 +525,36 @@ function Gallery({ images, loading, lastImageRef, hasMore }) {
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 385,
+        lineNumber: 442,
         columnNumber: 21
       },
       this
     )) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 383,
+      lineNumber: 440,
       columnNumber: 13
     }, this),
     loading && /* @__PURE__ */ jsxDEV("div", { className: "text-center py-8", children: /* @__PURE__ */ jsxDEV("div", { className: "text-xl", children: "Loading more..." }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 395,
+      lineNumber: 452,
       columnNumber: 21
     }, this) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 394,
+      lineNumber: 451,
       columnNumber: 17
     }, this),
     !hasMore && images.length > 0 && /* @__PURE__ */ jsxDEV("div", { className: "text-center py-8 text-gray-400", children: /* @__PURE__ */ jsxDEV("div", { className: "text-xl", children: "End of gallery" }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 400,
+      lineNumber: 457,
       columnNumber: 21
     }, this) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 399,
+      lineNumber: 456,
       columnNumber: 17
     }, this)
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 382,
+    lineNumber: 439,
     columnNumber: 9
   }, this);
 }
@@ -540,7 +581,7 @@ function ImageCard({ image, isLast, lastImageRef }) {
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 420,
+        lineNumber: 477,
         columnNumber: 13
       },
       this
@@ -548,13 +589,13 @@ function ImageCard({ image, isLast, lastImageRef }) {
     /* @__PURE__ */ jsxDEV("div", { className: "p-4", children: [
       /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-gray-300 truncate mb-2", title: image.prompt, children: image.prompt || "Logo" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 429,
+        lineNumber: 486,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("div", { className: "flex justify-between items-center", children: [
         /* @__PURE__ */ jsxDEV("span", { className: "text-xs text-gray-500 bg-gray-700 px-2 py-1 rounded", children: image.type }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 433,
+          lineNumber: 490,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDEV(
@@ -568,29 +609,29 @@ function ImageCard({ image, isLast, lastImageRef }) {
           false,
           {
             fileName: "<stdin>",
-            lineNumber: 436,
+            lineNumber: 493,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 432,
+        lineNumber: 489,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-gray-400 mt-2", children: new Date(image.created_at).toLocaleDateString() }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 443,
+        lineNumber: 500,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 428,
+      lineNumber: 485,
       columnNumber: 13
     }, this)
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 419,
+    lineNumber: 476,
     columnNumber: 9
   }, this);
 }
@@ -610,7 +651,7 @@ class ErrorBoundary extends React.Component {
       return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen bg-gray-900 text-white flex items-center justify-center", children: /* @__PURE__ */ jsxDEV("div", { className: "text-center", children: [
         /* @__PURE__ */ jsxDEV("h2", { className: "text-2xl mb-4", children: "Something went wrong" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 471,
+          lineNumber: 528,
           columnNumber: 25
         }, this),
         /* @__PURE__ */ jsxDEV(
@@ -624,18 +665,18 @@ class ErrorBoundary extends React.Component {
           false,
           {
             fileName: "<stdin>",
-            lineNumber: 472,
+            lineNumber: 529,
             columnNumber: 25
           },
           this
         )
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 470,
+        lineNumber: 527,
         columnNumber: 21
       }, this) }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 469,
+        lineNumber: 526,
         columnNumber: 17
       }, this);
     }
@@ -646,11 +687,11 @@ const root = createRoot(document.getElementById("root"));
 root.render(
   /* @__PURE__ */ jsxDEV(ErrorBoundary, { children: /* @__PURE__ */ jsxDEV(App, {}, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 490,
+    lineNumber: 547,
     columnNumber: 9
   }) }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 489,
+    lineNumber: 546,
     columnNumber: 5
   })
 );
