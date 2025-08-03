@@ -1,0 +1,44 @@
+{
+  "database": {
+    "schema": {
+      "logo_images": {
+        "id": {
+          "type": "uuid",
+          "description": "Unique identifier for the logo"
+        },
+        "url": {
+          "type": "text",
+          "description": "URL of the generated logo image"
+        },
+        "prompt": {
+          "type": "text",
+          "description": "The prompt used to generate this logo"
+        },
+        "type": {
+          "type": "text",
+          "description": "Type of generation: text, image, image+text"
+        },
+        "style": {
+          "type": "text",
+          "description": "Style of the logo if generated from text"
+        }
+      },
+      "prompts": {
+        "id": {
+          "type": "uuid",
+          "description": "Unique identifier for the prompt"
+        },
+        "text": {
+          "type": "text",
+          "description": "The prompt text"
+        },
+        "style": {
+          "type": "text",
+          "description": "Style associated with this prompt"
+        }
+      }
+    },
+    "instructions": "This infinite logo gallery stores generated logos and their prompts. The gallery supports both text-to-logo and image-to-logo generation. When infinite scrolling reaches the end, it generates new logos by merging existing prompts in creative ways."
+  }
+}
+
