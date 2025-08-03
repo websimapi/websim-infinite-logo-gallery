@@ -10,7 +10,7 @@ function App() {
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef();
   const { data: storedImages, loading: imagesLoading } = useQuery(
-    room.collection("logo_images").order("created_at", { ascending: false })
+    room.query("SELECT * FROM public.logo_images ORDER BY created_at DESC LIMIT 50")
   );
   const { data: prompts } = useQuery(room.collection("prompts"));
   const lastImageElementRef = useCallback((node) => {
